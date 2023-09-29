@@ -1,6 +1,7 @@
 open S_exp
+open Ast
 
-exception BadExpression of s_exp
+exception BadExpression of expr
 
 type value = Number of int | Boolean of bool
 
@@ -11,66 +12,64 @@ let string_of_value (v : value) : string =
   | Boolean b ->
       if b then "true" else "false"
 
-let rec interp_exp (exp : s_exp) : value =
+let rec interp_exp (exp : expr) : value =
   match exp with
   | Num n ->
       Number n
-  | Sym "true" ->
+  | True ->
       Boolean true
-  | Sym "false" ->
+  | False ->
       Boolean false
-  | Lst [Sym "not"; arg] ->
+  | Prim1 (Not, arg) ->
       if interp_exp arg = Boolean false then Boolean true
       else Boolean false
-  | Lst [Sym "zero?"; arg] -> (
+  | Prim1 (ZeroP, arg) -> (
     match interp_exp arg with
     | Number 0 ->
         Boolean true
     | _ ->
         Boolean false )
-  | Lst [Sym "num?"; arg] -> (
+  | Prim1 (NumP, arg) -> (
     match interp_exp arg with
     | Number _ ->
         Boolean true
     | _ ->
         Boolean false )
-  | Lst [Sym "add1"; arg] -> (
+  | Prim1 (Add1, arg) -> (
     match interp_exp arg with
     | Number n ->
         Number (n + 1)
     | _ ->
         raise (BadExpression exp) )
-  | Lst [Sym "sub1"; arg] -> (
+  | Prim1 (Sub1, arg) -> (
     match interp_exp arg with
     | Number n ->
         Number (n - 1)
     | _ ->
         raise (BadExpression exp) )
-  | Lst [Sym "+"; e1; e2] -> (
+  | Prim2 (Plus, e1, e2) -> (
     match (interp_exp e1, interp_exp e2) with
     | Number n1, Number n2 ->
         Number (n1 + n2)
     | _ ->
         raise (BadExpression exp) )
-  | Lst [Sym "-"; e1; e2] -> (
+  | Prim2 (Minus, e1, e2) -> (
     match (interp_exp e1, interp_exp e2) with
     | Number n1, Number n2 ->
         Number (n1 - n2)
     | _ ->
         raise (BadExpression exp) )
-  | Lst [Sym "="; e1; e2] ->
+  | Prim2 (Eq, e1, e2) ->
       Boolean (interp_exp e1 = interp_exp e2)
-  | Lst [Sym "<"; e1; e2] -> (
+  | Prim2 (Lt, e1, e2) -> (
     match (interp_exp e1, interp_exp e2) with
     | Number n1, Number n2 ->
         Boolean (n1 < n2)
     | _ ->
         raise (BadExpression exp) )
-  | Lst [Sym "if"; test_exp; then_exp; else_exp] ->
+  | If (test_exp, then_exp, else_exp) ->
       if interp_exp test_exp = Boolean false then interp_exp else_exp
       else interp_exp then_exp
-  | _ ->
-      raise (BadExpression exp)
 
 let interp (program : string) : string =
-  parse program |> interp_exp |> string_of_value
+  parse program |> expr_of_s_exp |> interp_exp |> string_of_value
