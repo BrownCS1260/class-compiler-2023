@@ -12,12 +12,6 @@ let string_of_value (v : value) : string =
       string_of_int n
   | Boolean b ->
       if b then "true" else "false"
-(*
-   let st : int symtab = Symtab.empty
-   let st' = Symtab.add "x" 2 st
-   let i : int = Symtab.find "x" st'
-
-   let j : int option = Symtab.find_opt "x" st' *)
 
 let rec interp_exp (env : value symtab) (exp : expr) : value =
   match exp with
