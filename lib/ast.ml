@@ -1,6 +1,6 @@
 open S_exp
 
-type prim1 = Add1 | Sub1 | ZeroP | NumP | Not
+type prim1 = Add1 | Sub1 | ZeroP | NumP | Not | Left | Right
 
 let prim1_of_string (s : string) : prim1 option =
   match s with
@@ -14,10 +14,14 @@ let prim1_of_string (s : string) : prim1 option =
       Some NumP
   | "not" ->
       Some Not
+  | "left" ->
+      Some Left
+  | "right" ->
+      Some Right
   | _ ->
       None
 
-type prim2 = Plus | Minus | Eq | Lt
+type prim2 = Plus | Minus | Eq | Lt | Pair
 
 let prim2_of_string = function
   | "+" ->
@@ -28,6 +32,8 @@ let prim2_of_string = function
       Some Eq
   | "<" ->
       Some Lt
+  | "pair" ->
+      Some Pair
   | _ ->
       None
 
