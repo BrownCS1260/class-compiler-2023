@@ -15,6 +15,11 @@
 
 extern uint64_t entry(void *heap);
 
+void error() {
+  printf("ERROR");
+  exit(1);
+}
+
 void print_value(uint64_t value) {
   if ((value & num_mask) == num_tag) {
     int64_t ivalue = (int64_t)value;

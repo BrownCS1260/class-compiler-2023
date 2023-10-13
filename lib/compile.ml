@@ -39,6 +39,20 @@ let lf_to_bool : directive list =
   ; Shl (Reg Rax, Imm bool_shift)
   ; Or (Reg Rax, Imm bool_tag) ]
 
+(* overwrites r8! *)
+let ensure_num (op : operand) : directive list =
+  [ Mov (Reg R8, op)
+  ; And (Reg R8, Imm num_mask)
+  ; Cmp (Reg R8, Imm num_tag)
+  ; Jnz "error" ]
+
+(* overwrites r8! *)
+let ensure_pair (op : operand) : directive list =
+  [ Mov (Reg R8, op)
+  ; And (Reg R8, Imm heap_mask)
+  ; Cmp (Reg R8, Imm pair_tag)
+  ; Jnz "error" ]
+
 let stack_address (stack_index : int) =
   MemOffset (Reg Rsp, Imm stack_index)
 
@@ -57,6 +71,8 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
       raise (BadExpression exp)
   | Prim1 (Add1, arg) ->
       compile_exp tab stack_index arg
+      @ [Mov (Reg R8, Reg Rax)]
+      @ ensure_num (Reg Rax)
       @ [Add (Reg Rax, Imm (1 lsl num_shift))]
   | Prim1 (Sub1, arg) ->
       compile_exp tab stack_index arg
@@ -75,14 +91,18 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
       @ zf_to_bool
   | Prim1 (Left, arg) ->
       compile_exp tab stack_index arg
+      @ ensure_pair (Reg Rax)
       @ [Mov (Reg Rax, MemOffset (Reg Rax, Imm (-pair_tag)))]
   | Prim1 (Right, arg) ->
       compile_exp tab stack_index arg
+      @ ensure_pair (Reg Rax)
       @ [Mov (Reg Rax, MemOffset (Reg Rax, Imm (-pair_tag + 8)))]
   | Prim2 (Plus, e1, e2) ->
       compile_exp tab stack_index e1
+      @ ensure_num (Reg Rax)
       @ [Mov (stack_address stack_index, Reg Rax)]
       @ compile_exp tab (stack_index - 8) e2
+      @ ensure_num (Reg Rax)
       @ [Add (Reg Rax, stack_address stack_index)]
   | Prim2 (Minus, e1, e2) ->
       compile_exp tab stack_index e1
@@ -132,7 +152,7 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
           (stack_index - 8) body
 
 let compile (program : expr) : string =
-  [Global "entry"; Label "entry"]
+  [Global "entry"; Extern "error"; Label "entry"]
   @ compile_exp Symtab.empty (-8) program
   @ [Ret]
   |> List.map string_of_directive
@@ -151,3 +171,6 @@ let compile_and_run (program : string) : string =
   let inp = Unix.open_process_in "./program" in
   let r = input_line inp in
   close_in inp ; r
+
+let compile_and_run_err (program : string) : string =
+  try compile_and_run program with BadExpression _ -> "ERROR"

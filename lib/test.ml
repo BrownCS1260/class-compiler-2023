@@ -3,7 +3,9 @@ open Interp
 
 let difftest (examples : string list) =
   let results =
-    List.map (fun ex -> (compile_and_run ex, interp ex)) examples
+    List.map
+      (fun ex -> (compile_and_run_err ex, interp_err ex))
+      examples
   in
   List.for_all (fun (r1, r2) -> r1 = r2) results
 
