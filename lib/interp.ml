@@ -28,6 +28,8 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
       Symtab.find var env
   | Var _ ->
       raise (BadExpression exp)
+  | Prim0 ReadNum ->
+      Number (input_line stdin |> int_of_string)
   | Prim1 (Not, arg) ->
       if interp_exp env arg = Boolean false then Boolean true
       else Boolean false
@@ -74,11 +76,13 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
     | _ ->
         raise (BadExpression exp) )
   | Prim2 (Minus, e1, e2) -> (
-    match (interp_exp env e1, interp_exp env e2) with
-    | Number n1, Number n2 ->
-        Number (n1 - n2)
-    | _ ->
-        raise (BadExpression exp) )
+      let lhs = interp_exp env e1 in
+      let rhs = interp_exp env e2 in
+      match (lhs, rhs) with
+      | Number n1, Number n2 ->
+          Number (n1 - n2)
+      | _ ->
+          raise (BadExpression exp) )
   | Prim2 (Eq, e1, e2) -> (
     match (interp_exp env e1, interp_exp env e2) with
     | Number n1, Number n2 ->

@@ -69,6 +69,8 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
       [Mov (Reg Rax, stack_address (Symtab.find var tab))]
   | Var _ ->
       raise (BadExpression exp)
+  | Prim0 ReadNum ->
+      raise (BadExpression exp)
   | Prim1 (Add1, arg) ->
       compile_exp tab stack_index arg
       @ [Mov (Reg R8, Reg Rax)]
