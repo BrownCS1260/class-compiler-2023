@@ -70,11 +70,13 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
     | _ ->
         raise (BadExpression exp) )
   | Prim2 (Plus, e1, e2) -> (
-    match (interp_exp env e1, interp_exp env e2) with
-    | Number n1, Number n2 ->
-        Number (n1 + n2)
-    | _ ->
-        raise (BadExpression exp) )
+      let lhs = interp_exp env e1 in
+      let rhs = interp_exp env e2 in
+      match (lhs, rhs) with
+      | Number n1, Number n2 ->
+          Number (n1 + n2)
+      | _ ->
+          raise (BadExpression exp) )
   | Prim2 (Minus, e1, e2) -> (
       let lhs = interp_exp env e1 in
       let rhs = interp_exp env e2 in
@@ -84,21 +86,27 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
       | _ ->
           raise (BadExpression exp) )
   | Prim2 (Eq, e1, e2) -> (
-    match (interp_exp env e1, interp_exp env e2) with
-    | Number n1, Number n2 ->
-        Boolean (n1 = n2)
-    | Boolean b1, Boolean b2 ->
-        Boolean (b1 = b2)
-    | _ ->
-        raise (BadExpression exp) )
+      let lhs = interp_exp env e1 in
+      let rhs = interp_exp env e2 in
+      match (lhs, rhs) with
+      | Number n1, Number n2 ->
+          Boolean (n1 = n2)
+      | Boolean b1, Boolean b2 ->
+          Boolean (b1 = b2)
+      | _ ->
+          raise (BadExpression exp) )
   | Prim2 (Lt, e1, e2) -> (
-    match (interp_exp env e1, interp_exp env e2) with
-    | Number n1, Number n2 ->
-        Boolean (n1 < n2)
-    | _ ->
-        raise (BadExpression exp) )
+      let lhs = interp_exp env e1 in
+      let rhs = interp_exp env e2 in
+      match (lhs, rhs) with
+      | Number n1, Number n2 ->
+          Boolean (n1 < n2)
+      | _ ->
+          raise (BadExpression exp) )
   | Prim2 (Pair, e1, e2) ->
-      Pair (interp_exp env e1, interp_exp env e2)
+      let lhs = interp_exp env e1 in
+      let rhs = interp_exp env e2 in
+      Pair (lhs, rhs)
   | Let (var, e, body) ->
       let e_val = interp_exp env e in
       interp_exp (Symtab.add var e_val env) body
