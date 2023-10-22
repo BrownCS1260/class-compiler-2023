@@ -56,6 +56,9 @@ let ensure_pair (op : operand) : directive list =
 let stack_address (stack_index : int) =
   MemOffset (Reg Rsp, Imm stack_index)
 
+let align_stack_index (stack_index : int) : int =
+  if stack_index mod 16 = -8 then stack_index else stack_index - 8
+
 let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
     : directive list =
   match exp with
@@ -70,7 +73,11 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
   | Var _ ->
       raise (BadExpression exp)
   | Prim0 ReadNum ->
-      raise (BadExpression exp)
+      [ Mov (stack_address stack_index, Reg Rdi)
+      ; Add (Reg Rsp, Imm (align_stack_index stack_index))
+      ; Call "read_num"
+      ; Sub (Reg Rsp, Imm (align_stack_index stack_index))
+      ; Mov (Reg Rdi, stack_address stack_index) ]
   | Prim1 (Add1, arg) ->
       compile_exp tab stack_index arg
       @ [Mov (Reg R8, Reg Rax)]
@@ -125,7 +132,7 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
       @ [Mov (stack_address stack_index, Reg Rax)]
       @ compile_exp tab (stack_index - 8) e2
       @ [ Mov (Reg R8, stack_address stack_index)
-        ; Cmp (Reg Rax, Reg R8) ]
+        ; Cmp (Reg R8, Reg Rax) ]
       @ lf_to_bool
   | Prim2 (Pair, e1, e2) ->
       compile_exp tab stack_index e1
@@ -154,7 +161,7 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
           (stack_index - 8) body
 
 let compile (program : expr) : string =
-  [Global "entry"; Extern "error"; Label "entry"]
+  [Global "entry"; Extern "error"; Extern "read_num"; Label "entry"]
   @ compile_exp Symtab.empty (-8) program
   @ [Ret]
   |> List.map string_of_directive
