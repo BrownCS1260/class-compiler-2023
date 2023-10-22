@@ -52,6 +52,7 @@ type expr =
   | Prim0 of prim0
   | Prim1 of prim1 * expr
   | Prim2 of prim2 * expr * expr
+  | Do of expr list
 
 exception BadSExpression of s_exp
 
@@ -78,5 +79,7 @@ let rec expr_of_s_exp (e : s_exp) : expr =
         ( Option.get (prim2_of_string op)
         , expr_of_s_exp e1
         , expr_of_s_exp e2 )
+  | Lst (Sym "do" :: exps) when List.length exps > 0 ->
+      Do (List.map expr_of_s_exp exps)
   | _ ->
       raise (BadSExpression e)

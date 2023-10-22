@@ -114,6 +114,8 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
       if interp_exp env test_exp = Boolean false then
         interp_exp env else_exp
       else interp_exp env then_exp
+  | Do exps ->
+      exps |> List.rev_map (interp_exp env) |> List.hd
 
 let interp (program : string) : string =
   parse program |> expr_of_s_exp |> interp_exp Symtab.empty

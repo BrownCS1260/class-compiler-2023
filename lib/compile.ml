@@ -159,6 +159,9 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
       @ compile_exp
           (Symtab.add var stack_index tab)
           (stack_index - 8) body
+  | Do exps ->
+      List.map (fun exp -> compile_exp tab stack_index exp) exps
+      |> List.concat
 
 let compile (program : expr) : string =
   [Global "entry"; Extern "error"; Extern "read_num"; Label "entry"]
