@@ -16,6 +16,10 @@ let rec string_of_value (v : value) : string =
       Printf.sprintf "(pair %s %s)" (string_of_value v1)
         (string_of_value v2)
 
+let input_channel : in_channel ref = ref stdin
+
+let output_channel : out_channel ref = ref stdout
+
 let rec interp_exp (env : value symtab) (exp : expr) : value =
   match exp with
   | Num n ->
@@ -29,12 +33,13 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
   | Var _ ->
       raise (BadExpression exp)
   | Prim0 ReadNum ->
-      Number (input_line stdin |> int_of_string)
+      Number (input_line !input_channel |> int_of_string)
   | Prim0 NewLIne ->
-      output_string stdout "\n" ;
+      output_string !output_channel "\n" ;
       Boolean true
   | Prim1 (Print, e) ->
-      interp_exp env e |> string_of_value |> output_string stdout ;
+      interp_exp env e |> string_of_value
+      |> output_string !output_channel ;
       Boolean true
   | Prim1 (Not, arg) ->
       if interp_exp env arg = Boolean false then Boolean true
@@ -126,5 +131,25 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
 let interp (program : string) : unit =
   parse program |> expr_of_s_exp |> interp_exp Symtab.empty |> ignore
 
-(* let interp_err (program : string) : string =
-   try interp program with BadExpression _ -> "ERROR" *)
+let interp_io (program : string) (input : string) =
+  let input_pipe_ex, input_pipe_en = Unix.pipe () in
+  let output_pipe_ex, output_pipe_en = Unix.pipe () in
+  input_channel := Unix.in_channel_of_descr input_pipe_ex ;
+  set_binary_mode_in !input_channel false ;
+  output_channel := Unix.out_channel_of_descr output_pipe_en ;
+  set_binary_mode_out !output_channel false ;
+  let write_input_channel = Unix.out_channel_of_descr input_pipe_en in
+  set_binary_mode_out write_input_channel false ;
+  let read_output_channel = Unix.in_channel_of_descr output_pipe_ex in
+  set_binary_mode_in read_output_channel false ;
+  output_string write_input_channel input ;
+  close_out write_input_channel ;
+  interp program ;
+  close_out !output_channel ;
+  let r = input_all read_output_channel in
+  input_channel := stdin ;
+  output_channel := stdout ;
+  r
+
+let interp_err (program : string) (input : string) : string =
+  try interp_io program input with BadExpression _ -> "ERROR"

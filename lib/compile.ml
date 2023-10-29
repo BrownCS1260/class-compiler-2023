@@ -203,5 +203,16 @@ let compile_and_run (program : string) : unit =
     (Unix.system "gcc program.o runtime.o -o program -z noexecstack") ;
   ignore (Unix.system "./program")
 
-(* let compile_and_run_err (program : string) : string =
-   try compile_and_run program with BadExpression _ -> "ERROR" *)
+let compile_and_run_io (program : string) (input : string) : string =
+  compile_to_file program ;
+  ignore (Unix.system "nasm program.s -f macho64 -o program.o") ;
+  ignore (Unix.system "gcc program.o runtime.o -o program") ;
+  let inp, outp = Unix.open_process "./program" in
+  output_string outp input ;
+  close_out outp ;
+  let r = input_all inp in
+  close_in inp ; r
+
+let compile_and_run_err (program : string) (input : string) : string =
+  try compile_and_run_io program input
+  with BadExpression _ -> "ERROR"
