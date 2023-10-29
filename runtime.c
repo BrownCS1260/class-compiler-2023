@@ -21,6 +21,10 @@ uint64_t read_num() {
   return (uint64_t)(r) << num_shift;
 }
 
+void print_newline() {
+  printf("\n");
+}
+
 void error() {
   printf("ERROR");
   exit(1);
@@ -48,7 +52,9 @@ void print_value(uint64_t value) {
     printf("BAD VALUE %" PRIu64, value);
   }
 }
+
 int main(int argc, char **argv) {
-    print_value(entry((void*)malloc(4096)));
-    return 0;
+  void *heap = (void *)malloc(4096);
+  entry(heap);
+  return 0;
 }

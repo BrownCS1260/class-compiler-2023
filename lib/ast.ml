@@ -1,11 +1,17 @@
 open S_exp
 
-type prim0 = ReadNum
+type prim0 = ReadNum | NewLIne
 
 let prim0_of_string (s : string) : prim0 option =
-  match s with "read-num" -> Some ReadNum | _ -> None
+  match s with
+  | "read-num" ->
+      Some ReadNum
+  | "newline" ->
+      Some NewLIne
+  | _ ->
+      None
 
-type prim1 = Add1 | Sub1 | ZeroP | NumP | Not | Left | Right
+type prim1 = Add1 | Sub1 | ZeroP | NumP | Not | Left | Right | Print
 
 let prim1_of_string (s : string) : prim1 option =
   match s with
@@ -23,6 +29,8 @@ let prim1_of_string (s : string) : prim1 option =
       Some Left
   | "right" ->
       Some Right
+  | "print" ->
+      Some Print
   | _ ->
       None
 

@@ -78,6 +78,22 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
       ; Call "read_num"
       ; Sub (Reg Rsp, Imm (align_stack_index stack_index))
       ; Mov (Reg Rdi, stack_address stack_index) ]
+  | Prim0 NewLIne ->
+      [ Mov (stack_address stack_index, Reg Rdi)
+      ; Add (Reg Rsp, Imm (align_stack_index stack_index))
+      ; Call "print_newline"
+      ; Sub (Reg Rsp, Imm (align_stack_index stack_index))
+      ; Mov (Reg Rdi, stack_address stack_index)
+      ; Mov (Reg Rax, operand_of_bool true) ]
+  | Prim1 (Print, e) ->
+      compile_exp tab stack_index e
+      @ [ Mov (stack_address stack_index, Reg Rdi)
+        ; Mov (Reg Rdi, Reg Rax)
+        ; Add (Reg Rsp, Imm (align_stack_index stack_index))
+        ; Call "print_value"
+        ; Sub (Reg Rsp, Imm (align_stack_index stack_index))
+        ; Mov (Reg Rdi, stack_address stack_index)
+        ; Mov (Reg Rax, operand_of_bool true) ]
   | Prim1 (Add1, arg) ->
       compile_exp tab stack_index arg
       @ [Mov (Reg R8, Reg Rax)]
@@ -164,7 +180,12 @@ let rec compile_exp (tab : int symtab) (stack_index : int) (exp : expr)
       |> List.concat
 
 let compile (program : expr) : string =
-  [Global "entry"; Extern "error"; Extern "read_num"; Label "entry"]
+  [ Global "entry"
+  ; Extern "error"
+  ; Extern "read_num"
+  ; Extern "print_newline"
+  ; Extern "print_value"
+  ; Label "entry" ]
   @ compile_exp Symtab.empty (-8) program
   @ [Ret]
   |> List.map string_of_directive
@@ -175,14 +196,12 @@ let compile_to_file (program : string) : unit =
   parse program |> expr_of_s_exp |> compile |> output_string file ;
   close_out file
 
-let compile_and_run (program : string) : string =
+let compile_and_run (program : string) : unit =
   compile_to_file program ;
   ignore (Unix.system "nasm program.s -f elf64 -o program.o") ;
   ignore
     (Unix.system "gcc program.o runtime.o -o program -z noexecstack") ;
-  let inp = Unix.open_process_in "./program" in
-  let r = input_line inp in
-  close_in inp ; r
+  ignore (Unix.system "./program")
 
-let compile_and_run_err (program : string) : string =
-  try compile_and_run program with BadExpression _ -> "ERROR"
+(* let compile_and_run_err (program : string) : string =
+   try compile_and_run program with BadExpression _ -> "ERROR" *)

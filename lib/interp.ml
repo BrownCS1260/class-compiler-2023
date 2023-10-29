@@ -30,6 +30,12 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
       raise (BadExpression exp)
   | Prim0 ReadNum ->
       Number (input_line stdin |> int_of_string)
+  | Prim0 NewLIne ->
+      output_string stdout "\n" ;
+      Boolean true
+  | Prim1 (Print, e) ->
+      interp_exp env e |> string_of_value |> output_string stdout ;
+      Boolean true
   | Prim1 (Not, arg) ->
       if interp_exp env arg = Boolean false then Boolean true
       else Boolean false
@@ -117,9 +123,8 @@ let rec interp_exp (env : value symtab) (exp : expr) : value =
   | Do exps ->
       exps |> List.rev_map (interp_exp env) |> List.hd
 
-let interp (program : string) : string =
-  parse program |> expr_of_s_exp |> interp_exp Symtab.empty
-  |> string_of_value
+let interp (program : string) : unit =
+  parse program |> expr_of_s_exp |> interp_exp Symtab.empty |> ignore
 
-let interp_err (program : string) : string =
-  try interp program with BadExpression _ -> "ERROR"
+(* let interp_err (program : string) : string =
+   try interp program with BadExpression _ -> "ERROR" *)
