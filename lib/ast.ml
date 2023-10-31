@@ -61,8 +61,17 @@ type expr =
   | Prim1 of prim1 * expr
   | Prim2 of prim2 * expr * expr
   | Do of expr list
+  | Call of string * expr list
 
 exception BadSExpression of s_exp
+
+type defn = {name: string; args: string list; body: expr}
+
+type program = {defns: defn list; body: expr}
+
+let is_defn defns name = List.exists (fun d -> d.name = name) defns
+
+let get_defn defns name = List.find (fun d -> d.name = name) defns
 
 let rec expr_of_s_exp (e : s_exp) : expr =
   match e with
@@ -89,5 +98,35 @@ let rec expr_of_s_exp (e : s_exp) : expr =
         , expr_of_s_exp e2 )
   | Lst (Sym "do" :: exps) when List.length exps > 0 ->
       Do (List.map expr_of_s_exp exps)
+  | Lst (Sym f :: args) ->
+      Call (f, List.map expr_of_s_exp args)
   | _ ->
       raise (BadSExpression e)
+
+let program_of_s_exps (exps : s_exp list) : program =
+  let rec get_args args =
+    match args with
+    | Sym v :: args ->
+        v :: get_args args
+    | e :: _ ->
+        raise (BadSExpression e)
+    | [] ->
+        []
+  in
+  let get_defn = function
+    | Lst [Sym "define"; Lst (Sym name :: args); body] ->
+        let args = get_args args in
+        {name; args; body= expr_of_s_exp body}
+    | e ->
+        raise (BadSExpression e)
+  in
+  let rec go exps defns =
+    match exps with
+    | [e] ->
+        {defns= List.rev defns; body= expr_of_s_exp e}
+    | d :: exps ->
+        go exps (get_defn d :: defns)
+    | _ ->
+        raise (BadSExpression (Sym "empty"))
+  in
+  go exps []
