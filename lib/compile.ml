@@ -183,6 +183,30 @@ let rec compile_exp (defns : defn list) (tab : int symtab)
             (if i = List.length exps - 1 then is_tail else false) )
         exps
       |> List.concat
+  | Call (f, args) when is_defn defns f && is_tail ->
+      let defn = get_defn defns f in
+      if List.length args <> List.length defn.args then
+        raise (BadExpression exp)
+      else
+        let compiled_args =
+          args
+          |> List.mapi (fun i arg ->
+                 compile_exp defns tab
+                   (stack_index - (8 * i))
+                   arg false
+                 @ [ Mov
+                       (stack_address (stack_index - (8 * i)), Reg Rax)
+                   ] )
+          |> List.concat
+        in
+        let moved_args =
+          args
+          |> List.mapi (fun i _ ->
+                 [ Mov (Reg R8, stack_address (stack_index - (8 * i)))
+                 ; Mov (stack_address (-8 * (i + 1)), Reg R8) ] )
+          |> List.concat
+        in
+        compiled_args @ moved_args @ [Jmp (defn_label f)]
   | Call (f, args) when is_defn defns f ->
       let defn = get_defn defns f in
       if List.length args <> List.length defn.args then
@@ -214,7 +238,7 @@ let compile_defn (defns : defn list) {name; args; body} =
     |> Symtab.of_list
   in
   [Label (defn_label name)]
-  @ compile_exp defns ftab (-8 * (List.length args + 1)) body
+  @ compile_exp defns ftab (-8 * (List.length args + 1)) body true
   @ [Ret]
 
 let compile (prog : program) : string =
@@ -224,7 +248,7 @@ let compile (prog : program) : string =
   ; Extern "print_newline"
   ; Extern "print_value"
   ; Label "entry" ]
-  @ compile_exp prog.defns Symtab.empty (-8) prog.body
+  @ compile_exp prog.defns Symtab.empty (-8) prog.body true
   @ [Ret]
   @ List.concat_map (compile_defn prog.defns) prog.defns
   |> List.map string_of_directive
