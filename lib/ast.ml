@@ -55,6 +55,7 @@ type expr =
   | False
   | Num of int
   | Var of string
+  | Closure of string
   | If of expr * expr * expr
   | Let of string * expr * expr
   | Prim0 of prim0
