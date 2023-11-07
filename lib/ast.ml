@@ -61,7 +61,7 @@ type expr =
   | Prim1 of prim1 * expr
   | Prim2 of prim2 * expr * expr
   | Do of expr list
-  | Call of string * expr list
+  | Call of expr * expr list
 
 exception BadSExpression of s_exp
 
@@ -98,8 +98,8 @@ let rec expr_of_s_exp (e : s_exp) : expr =
         , expr_of_s_exp e2 )
   | Lst (Sym "do" :: exps) when List.length exps > 0 ->
       Do (List.map expr_of_s_exp exps)
-  | Lst (Sym f :: args) ->
-      Call (f, List.map expr_of_s_exp args)
+  | Lst (f :: args) ->
+      Call (expr_of_s_exp f, List.map expr_of_s_exp args)
   | _ ->
       raise (BadSExpression e)
 

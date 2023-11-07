@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+
 #define num_shift 2
 #define num_mask 0b11
 #define num_tag 0b00
@@ -12,6 +13,8 @@
 
 #define heap_mask 0b111
 #define pair_tag 0b010
+
+#define fn_tag 0b110
 
 extern uint64_t entry(void *heap);
 
@@ -48,6 +51,8 @@ void print_value(uint64_t value) {
     printf(" ");
     print_value(v2);
     printf(")");
+  } else if ((value & heap_mask) == fn_tag) {
+      printf("<function>");
   } else {
     printf("BAD VALUE %" PRIu64, value);
   }
