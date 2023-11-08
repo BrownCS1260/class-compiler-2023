@@ -129,7 +129,7 @@ let rec compile_exp (defns : defn list) (tab : int symtab)
         @ List.concat fv_movs
         @ [ Mov (Reg Rax, Reg Rdi)
           ; Or (Reg Rax, Imm fn_tag)
-          ; And (Reg Rdi, Imm (8 * (List.length fvs + 1))) ]
+          ; Add (Reg Rdi, Imm (8 * (List.length fvs + 1))) ]
   | Prim0 ReadNum ->
       [ Mov (stack_address stack_index, Reg Rdi)
       ; Add (Reg Rsp, Imm (align_stack_index stack_index))
