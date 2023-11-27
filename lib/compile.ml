@@ -2,6 +2,7 @@ open S_exp
 open Asm
 open Util
 open Ast_lam
+open Constant_folding
 
 exception BadExpression of expr
 
@@ -318,6 +319,7 @@ let compile_defn (defns : defn list) {name; args; body} =
   @ [Ret]
 
 let compile (prog : program) : string =
+  let prog = fold_program prog in
   [ Global "entry"
   ; Extern "error"
   ; Extern "read_num"
